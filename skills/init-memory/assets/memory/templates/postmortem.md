@@ -4,6 +4,13 @@
 - Severity: <low | medium | high | prod-impact>
 - Owners: <names / teams>
 - Recurrence guard: in-place | partially-in-place | removed | not-applicable
+- Subsumes: <older entries this aggregate replaces, if compaction-aggregate>
+
+## TL;DR
+
+<<= 2 lines: symptom + root cause + whether guard is in place. Copy verbatim
+into the INDEX TL;DR column in the same commit. This is what L1/L2 readers
+see; if missing or stale, progressive disclosure breaks.>>
 
 ## Symptom
 

@@ -196,6 +196,77 @@ with a stale `Next session pickup` (didn't update at session end) is worse
 than no field, because the next agent trusts it. Hence the protocol's
 insistence on updating it at session end.
 
+## Why progressive disclosure (L0–L3 + TL;DR)
+
+Without tiering, session-start cost grows linearly with the corpus: every new
+decision / lesson adds another row to skim and (if the title is ambiguous)
+another file to open. After a year of use, "scan the INDEX" stops being
+cheap.
+
+Progressive disclosure caps L0 at ~50 lines regardless of corpus size — only
+the goals INDEX Active table, the in-flight task filenames, and the latest
+journal head. Everything else is deferred until a trigger fires:
+
+- L1 only fires for categories your task touches.
+- L2 only fires for INDEX rows whose TL;DR matches.
+- L3 only fires when you'll act on the entry.
+
+The `## TL;DR` block is the load-bearing primitive. It shifts the cost of
+"is this entry relevant?" from the reader (every session, N rows × N
+characters of skim) to the writer (one ≤ 2-line summary, written once while
+the context is still in the author's head). The asymmetry is the point: the
+writer pays once cheaply; readers benefit forever.
+
+Mirroring the TL;DR into the INDEX (rather than only in the file) means L1
+can answer the relevance question without opening any file at all. The
+duplication is deliberate — it's the same kind of trade-off as INDEX itself
+duplicating filenames + statuses. Both duplications collapse a "read every
+file" cost into a "read one INDEX" cost. We accept the same-commit-sync
+obligation as the price.
+
+## Why compaction (and not auto-archive of active entries)
+
+Existing eviction handles entries that are *wrong* (`stale` / `corrected`)
+or *replaced* (`superseded`). It doesn't handle the case where 30 entries
+are all still individually correct but collectively too many to scan. That's
+compaction's job.
+
+Auto-archiving an active entry is unsafe: it's still authoritative, agents
+must still act on it. Moving it out of `INDEX.md` Active without a
+replacement breaks the protocol's "agents only act on Active" rule and
+hides knowledge that's still load-bearing.
+
+Compaction solves this differently — it merges N narrow active entries into
+one broader active aggregate that subsumes them, then supersedes the
+originals. The aggregate is still active, still scanned, still acted on.
+The INDEX shrinks because N rows become 1, not because rows were hidden.
+
+The aggregate-TL;DR coverage rule is the safety net. If the aggregate's
+TL;DR can't pattern-match every original trigger, the compaction has lost
+information — that's not a tightening, it's a deletion. The protocol
+requires reverting in that case. This is why we forbid grab-bag
+aggregates: combining unrelated topics produces a TL;DR so generic it
+never triggers, which means the merged entries effectively don't exist
+anymore.
+
+## Why soft caps, not hard caps
+
+A hard cap forces "compact to fit" — once you hit the limit, *something*
+must merge, even if the only available pairs are forced ones. That degrades
+quality (grab-bag aggregates) precisely when the corpus most needs care.
+
+A soft cap is a *signal*, not a constraint. The agent notices the threshold,
+schedules a sweep, and then exercises judgement: are there ≥ 3 same-topic
+active entries with overlapping triggers? Yes → aggregate. No → leave the
+list oversized; it's better to be over the cap with clean entries than at
+the cap with a lossy aggregate.
+
+The numbers (25 / 30 / 20 / 10) are chosen so a focused agent can read all
+TL;DRs in a category in one scan — past that, the L1 read itself starts
+costing real attention. They're not magic; users who find their corpus
+shape differs (e.g. lessons grow much faster than decisions) can adjust
+them in their own `INDEX.md`. The skill ships defaults, not policy.
+
 ## Why we kept it boring
 
 Throughout the design we resisted features that "would be nice but aren't

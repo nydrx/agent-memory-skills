@@ -51,6 +51,30 @@ The two together form the agent-memory protocol; the entry point is
 `-- inbox.md                   (quick capture for unsorted notes)
 ```
 
+## Progressive disclosure
+
+Memory is read in tiers. Each tier has a budget and a trigger; **do not jump
+to a deeper tier without the trigger**. Reading L3 (full bodies) at session
+start defeats the system — that's what L0 is for.
+
+| Tier | What you read | When | Budget |
+|------|---------------|------|--------|
+| L0 | `goals/INDEX.md` Active table; `.scratch/tasks/` filenames; latest `.scratch/journal/YYYY-MM/*.md` head | Every session start, unconditionally | ~50 lines total |
+| L1 | The `TL;DR` column of `<category>/INDEX.md` Active table, for each category your task touches | When picking or scoping a task | one INDEX per touched category |
+| L2 | A specific entry's `## TL;DR` + metadata block (Status / Date / When-to-apply / Affects) — first ~30 lines | When an L1 row's TL;DR matches the work you're about to do | per entry, on demand |
+| L3 | Full entry body | Only when you will act on it (apply, supersede, cite in a review, write code that depends on it) | per entry, on demand |
+
+Every committed memory entry carries a `## TL;DR` block (≤ 2 lines) at the
+top; the same string appears in its row of the category INDEX's `TL;DR`
+column. Keep them byte-identical — drift between the two breaks the read
+contract. The block is what L1/L2 readers see; if it's missing or stale, an
+agent has to fall back to L3 and the protocol's session-start cost grows
+with the corpus.
+
+The TL;DR is written *while still in the head* of the agent that authored
+the entry — that's the only cheap moment to summarise it. A future reader
+pays nothing.
+
 ## Quick start (first session ever)
 
 1. Pick the first task. Copy `templates/task.md` to
@@ -65,14 +89,24 @@ The two together form the agent-memory protocol; the entry point is
 
 ### Session start
 
-1. Read `goals/INDEX.md` Active section to refresh on current high-level intent.
-2. Read `.scratch/tasks/` if present (any in-flight tasks from prior sessions).
+This is L0 — keep it cheap. Don't open `decisions/` or `lessons/` files yet.
+
+1. Read `goals/INDEX.md` Active section (TL;DR column) to refresh on current
+   high-level intent.
+2. List `.scratch/tasks/` (filenames only) for in-flight tasks from prior
+   sessions; open the one you'll continue.
 3. Read latest `.scratch/journal/YYYY-MM/*.md` (your prior context: last
    terminal command, last decision).
-4. Skim `decisions/INDEX.md` and `lessons/INDEX.md` Active sections for items
-   relevant to today's work.
-5. If you spot >=2 active conflicting entries, mark them as sweep candidates --
-   don't pause work for the sweep.
+4. While scanning the goals INDEX, note the per-category active counts visible
+   in `decisions/INDEX.md` / `lessons/INDEX.md` / `postmortems/INDEX.md`. If
+   any category exceeds its soft cap (see Compaction), schedule a cluster
+   sweep for this session.
+5. If you spot >=2 active conflicting entries while at L1/L2 later, mark them
+   as sweep candidates — don't pause work for the sweep.
+
+Promote to L1 (read the `TL;DR` column of a category's INDEX) only when your
+task scope touches that category; promote to L2/L3 only when an L1 row
+matches the work you're about to do.
 
 ### During session
 
@@ -238,6 +272,72 @@ folders.
   - Conflict detected during session-start scan -> sweep that topic
     immediately.
 
+## Compaction (preventing active-set explosion)
+
+Eviction handles entries that are wrong or outdated. Compaction handles the
+opposite problem: too many entries that are all still correct. Both never
+`rm`; both flip Status.
+
+Soft caps per category (Active count only; Superseded / Stale / Done don't
+count):
+
+| Category | Soft cap | Trigger action |
+|----------|----------|----------------|
+| decisions | 25 | Cluster sweep |
+| lessons | 30 | Cluster sweep |
+| postmortems | 20 | Cluster sweep |
+| goals | 10 | Demote stale goals to `deferred` first; cluster only if still over |
+
+These are **soft** caps on purpose — a hard limit forces "compact to fit"
+(grab-bag aggregates), which is worse than an oversized active list. The
+cap only triggers a sweep; the sweep itself still requires judgement.
+
+### Cluster sweep procedure
+
+When a category exceeds its soft cap (or is about to, when writing a new
+entry):
+
+1. Group active entries by topic (`Topic:` for lessons, `Affects:` for
+   decisions, root-cause class for postmortems). Skip groups with < 3
+   entries — there's nothing to compact.
+2. For each qualifying group, write one **aggregate** entry using the
+   normal template. The body MUST carry a `Subsumes:` list of the entries
+   it absorbs, and the `## TL;DR` MUST cover all subsumed triggers. If the
+   aggregate's TL;DR can't cover the union, the group isn't actually one
+   topic — split it back out and don't compact.
+3. In the same commit:
+   - Each subsumed entry: flip `Status: superseded`,
+     `Superseded by: <aggregate file>`.
+   - Aggregate's `Supersedes:` list mirrors the subsumed files.
+   - INDEX: remove subsumed rows from Active, add them to Superseded with
+     the aggregate as the link target. Add the new aggregate row to
+     Active.
+4. Verify the aggregate's TL;DR pattern-matches every original trigger by
+   reading them in sequence. If any original trigger doesn't fire on the
+   aggregate, revert the compaction — information has been lost.
+
+### Triggers (event-driven)
+
+- Session-start L0 scan notices a category over its soft cap.
+- A new promotion is about to push a category over its cap (compact first,
+  then promote).
+- A `forced scan before promotion` finds >=3 active entries on the same
+  topic — go straight to a cluster sweep instead of a single supersession.
+
+### Forbidden compaction patterns
+
+- **Grab-bag aggregate** — combining unrelated topics under "miscellaneous
+  X". An aggregate that can't be pattern-matched on read never triggers
+  when needed, so the knowledge is effectively deleted.
+- **Lossy TL;DR** — the aggregate's TL;DR has to cover every subsumed
+  trigger. If it doesn't, leave the entries un-compacted and over the cap;
+  oversized is better than wrong.
+- **Compaction across status boundaries** — never fold a `corrected` or
+  `stale` entry into an `active` aggregate. Keep the anti-pattern trail.
+- **Quiet compaction** — the same-commit rule (status flip + INDEX move +
+  aggregate write) is non-negotiable. Spreading it across commits leaves
+  the INDEX lying.
+
 ## Anti-patterns (forbidden)
 
 - Hard-deleting a committed memory file.
@@ -254,3 +354,11 @@ folders.
 - Putting state / journal content into a capability-injection directory like
   `.agents/skills/` (those are SKILL.md / capability files, not memory) or
   putting a SKILL.md into `.memory/` (this is memory, not capabilities).
+- Reading L3 (full entry bodies) at session start. L0 must stay O(1) in
+  corpus size — that's the whole point of progressive disclosure.
+- Writing an entry whose `## TL;DR` block disagrees with the INDEX `TL;DR`
+  column. INDEX is the L1 surface; drift between the two breaks the read
+  contract for every future agent.
+- Compacting unrelated entries into a grab-bag aggregate. An aggregate
+  that can't be pattern-matched on read deletes the knowledge in
+  practice.

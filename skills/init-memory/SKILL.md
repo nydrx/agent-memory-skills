@@ -178,6 +178,31 @@ The full table is in `.memory/README.md`, but the gist:
 - Decision `Context at decision time` -- what was true when this was decided. Read before second-guessing.
 - Lesson `When to apply` -- the trigger pattern, specific enough to pattern-match without reading every file.
 - Postmortem `Recurrence guard` -- whether the prevention is still in place. If `removed` or `partially-in-place`, similar incidents can recur.
+- Entry `## TL;DR` -- ≤ 2 lines at the top of every committed entry, mirrored verbatim in the INDEX `TL;DR` column. This is the L1/L2 read surface for progressive disclosure; missing or stale TL;DR forces L3 reads at session start and the protocol's cost stops being O(1) in corpus size.
+
+## Progressive disclosure & compaction
+
+The scaffolded `.memory/README.md` defines a four-tier read protocol (L0–L3)
+and per-category soft caps that trigger a cluster sweep when active entries
+grow too large. Both mechanisms are markdown-only — no scripts, no automation:
+
+- **L0 (always)** — `goals/INDEX.md` Active + `.scratch/tasks/` filenames + latest journal head. ~50 lines, O(1) in corpus size.
+- **L1 (touched category)** — the INDEX `TL;DR` column for the category your task touches.
+- **L2 (matching row)** — the entry's `## TL;DR` block + metadata, ~30 lines.
+- **L3 (acting on it)** — full body, only when applying / superseding / citing.
+
+Each committed entry carries a `## TL;DR` block (≤ 2 lines) mirrored in the
+INDEX `TL;DR` column. Drift between the two breaks the L1 read surface.
+
+Compaction soft caps: decisions 25, lessons 30, postmortems 20, goals 10
+(active only). Over the cap → cluster sweep: group by `Topic` / `Affects`,
+write an aggregate that subsumes ≥ 3 same-topic entries, flip subsumed
+entries to `superseded` pointing at the aggregate, in the **same commit**.
+Aggregate TL;DR must cover every subsumed trigger or the compaction is
+reverted. Never combine unrelated topics into a grab-bag aggregate.
+
+See `assets/memory/README.md` → Progressive disclosure / Compaction for the
+full protocol and forbidden patterns.
 
 ## Cross-repo coordination
 
@@ -204,6 +229,9 @@ To force re-scaffold, the user can `rm -rf <repo>/.memory/` (history is preserve
 - Storing live in-flight TODOs in `.memory/` (those go in `.scratch/`).
 - Promoting trivia to `lessons/` (only promote things specific enough that a future agent can pattern-match the trigger; generic "be careful with X" notes are noise).
 - Auto-committing on the user's behalf as part of scaffolding (the commit is a separate explicit step).
+- Reading L3 (full entry bodies) during session start instead of staying at L0. The tier system exists so session-start cost stays O(1) — defeating it makes the corpus impossible to scale.
+- Compacting entries from different topics into a grab-bag aggregate. An aggregate whose TL;DR can't pattern-match every subsumed trigger has effectively deleted that knowledge.
+- Letting an entry's `## TL;DR` block disagree with the INDEX `TL;DR` column. The INDEX is the L1 read surface; drift breaks the contract.
 
 ## References
 
