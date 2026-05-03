@@ -1,4 +1,4 @@
-# memoryskill
+# agent-memory-skills
 
 A shared collection of [Claude Code](https://claude.com/claude-code) skills, kept here so they can be installed, version-controlled, and updated across machines.
 
@@ -19,26 +19,26 @@ Each `skills/<skill-name>/` directory is a complete, self-contained Claude Code 
 
 | Skill | What it does |
 |---|---|
-| [`init-memory`](skills/init-memory/SKILL.md) | Scaffold a tool-agnostic, markdown-only persistent agent memory layer (`.memory/` committed + `.scratch/` gitignored) into any git repo so AI agents stop losing context across sessions. |
+| [`init-native-memory`](skills/init-native-memory/SKILL.md) | Scaffold a tool-agnostic, markdown-only persistent agent memory layer (`.memory/` committed + `.scratch/` gitignored) into any git repo so AI agents stop losing context across sessions. |
 
 ## Install
 
 Clone once, then symlink the skills you want into your global skill directory. Symlinks (rather than copies) mean a `git pull` here updates every installed skill in place.
 
 ```bash
-git clone https://github.com/nydrx/memoryskill.git ~/src/memoryskill
+git clone https://github.com/nydrx/agent-memory-skills.git ~/src/agent-memory-skills
 
 # install a single skill
-ln -s ~/src/memoryskill/skills/init-memory ~/.claude/skills/init-memory
+ln -s ~/src/agent-memory-skills/skills/init-native-memory ~/.claude/skills/init-native-memory
 
 # update later
-git -C ~/src/memoryskill pull
+git -C ~/src/agent-memory-skills pull
 ```
 
 If you'd rather not symlink (e.g. you want to edit the skill locally without affecting the repo), copy instead:
 
 ```bash
-cp -R ~/src/memoryskill/skills/init-memory ~/.claude/skills/init-memory
+cp -R ~/src/agent-memory-skills/skills/init-native-memory ~/.claude/skills/init-native-memory
 ```
 
 After install, restart Claude Code (or open a new session) so the skill loader picks up the new `SKILL.md`.

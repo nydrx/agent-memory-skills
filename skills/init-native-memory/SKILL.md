@@ -1,9 +1,9 @@
 ---
-name: init-memory
-description: Scaffold a tool-agnostic, markdown-only persistent agent memory layer (`.memory/` committed + `.scratch/` gitignored) in a target git repo so AI agents working across context windows, terminal sessions, and tool boundaries (Claude / Cursor / Codex / OpenAI / etc.) stop losing progress, re-deriving goals, and re-learning lessons. Use whenever a user says `/init-memory`, "init memory", "set up agent memory", "scaffold memory tracking", "add `.memory/`", "add persistent memory", or describes pain like "the AI keeps forgetting context across sessions", "I have to re-explain the project to every fresh chat", "I want a way for the agent to remember decisions across runs", "agent state keeps getting lost", "how do I make the AI remember things between chats". Especially trigger when a user mentions cross-context state loss, agent amnesia, or wants a markdown convention for goals / decisions / lessons / postmortems / tasks that survives across chat sessions and AI tools. Trigger even if the phrasing is indirect (e.g. "I keep starting from scratch every chat", "the AI doesn't remember our past discussions", "set up that memory folder thing"). Don't trigger for general doc/wiki requests, code-search RAG indexes, or project handbooks aimed at humans.
+name: init-native-memory
+description: Scaffold a tool-agnostic, markdown-only persistent agent memory layer (`.memory/` committed + `.scratch/` gitignored) in a target git repo so AI agents working across context windows, terminal sessions, and tool boundaries (Claude / Cursor / Codex / OpenAI / etc.) stop losing progress, re-deriving goals, and re-learning lessons. Use whenever a user says `/init-native-memory`, "init native memory", "set up agent memory", "scaffold memory tracking", "add `.memory/`", "add persistent memory", or describes pain like "the AI keeps forgetting context across sessions", "I have to re-explain the project to every fresh chat", "I want a way for the agent to remember decisions across runs", "agent state keeps getting lost", "how do I make the AI remember things between chats". Especially trigger when a user mentions cross-context state loss, agent amnesia, or wants a markdown convention for goals / decisions / lessons / postmortems / tasks that survives across chat sessions and AI tools. Trigger even if the phrasing is indirect (e.g. "I keep starting from scratch every chat", "the AI doesn't remember our past discussions", "set up that memory folder thing"). Don't trigger for general doc/wiki requests, code-search RAG indexes, or project handbooks aimed at humans.
 ---
 
-# Init Memory
+# Init Native Memory
 
 Scaffold a tool-agnostic, markdown-only **persistent agent memory layer** in a target repository. The deliverable is two directories at the repo root plus three small wiring touches to existing files. Once installed, any AI agent (or human) following the convention picks up state across context windows, terminal sessions, and tool boundaries -- no plugins, no scripts, no caches, no out-of-band setup.
 
@@ -18,7 +18,7 @@ The split is the point: committed material is what *future* agents (and humans) 
 
 Trigger on any of:
 
-- User says `/init-memory`, "init memory", "set up agent memory", "scaffold memory", "add `.memory/`", "add persistent memory", "add memory tracking" (any phrasing).
+- User says `/init-native-memory`, "init native memory", "set up agent memory", "scaffold memory", "add `.memory/`", "add persistent memory", "add memory tracking" (any phrasing).
 - User describes pain about agents losing context: "the AI keeps forgetting", "fresh chats lose state", "I have to re-explain", "I want the agent to remember decisions".
 - User wants a multi-repo (monorepo or sibling-repo) workflow where cross-session / cross-repo state must survive.
 - User is starting a new repo and asks "what's a good convention for tracking AI agent context".
