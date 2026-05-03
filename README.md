@@ -1,4 +1,4 @@
-# memory
+# memoryskill
 
 A shared collection of [Claude Code](https://claude.com/claude-code) skills, kept here so they can be installed, version-controlled, and updated across machines.
 
@@ -26,19 +26,19 @@ Each `skills/<skill-name>/` directory is a complete, self-contained Claude Code 
 Clone once, then symlink the skills you want into your global skill directory. Symlinks (rather than copies) mean a `git pull` here updates every installed skill in place.
 
 ```bash
-git clone https://github.com/nydrx/memory.git ~/src/memory
+git clone https://github.com/nydrx/memoryskill.git ~/src/memoryskill
 
 # install a single skill
-ln -s ~/src/memory/skills/init-memory ~/.claude/skills/init-memory
+ln -s ~/src/memoryskill/skills/init-memory ~/.claude/skills/init-memory
 
 # update later
-git -C ~/src/memory pull
+git -C ~/src/memoryskill pull
 ```
 
 If you'd rather not symlink (e.g. you want to edit the skill locally without affecting the repo), copy instead:
 
 ```bash
-cp -R ~/src/memory/skills/init-memory ~/.claude/skills/init-memory
+cp -R ~/src/memoryskill/skills/init-memory ~/.claude/skills/init-memory
 ```
 
 After install, restart Claude Code (or open a new session) so the skill loader picks up the new `SKILL.md`.
