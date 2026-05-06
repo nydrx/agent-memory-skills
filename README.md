@@ -17,6 +17,8 @@ Modern coding agents lose state the moment the context window closes. Every fres
 
 No plugins. No daemons. No vendor lock-in. Just markdown and a protocol.
 
+The skills come as a **scaffold + recall** pair: `init-native-memory` *scaffolds* the `.memory/` (committed) + `.scratch/` (gitignored) layout, the templates, the INDEX files, and the cross-repo conventions; `memory-enhanced-prompt` *activates* the read protocol at runtime so an agent can't skip the L0 scan to save tokens, leak L3 reads when it shouldn't, or silently violate an Active Decision because it didn't bother to read the INDEX. Install one without the other and the protocol is half-built — scaffolding without enforcement degrades into stale markdown; enforcement without scaffolding has nothing to read.
+
 ---
 
 ## Install
@@ -43,6 +45,11 @@ npx skills add nydrx/agent-memory-skills --skill init-native-memory -g
 
 # project-only (committed alongside your code)
 npx skills add nydrx/agent-memory-skills --skill init-native-memory
+```
+
+```bash
+# global (available in every project)
+npx skills add nydrx/agent-memory-skills --skill memory-enhanced-prompt -g
 ```
 
 ### Target specific agents
@@ -77,6 +84,7 @@ After install, **start a new agent session** so the skill loader picks up the ne
 | Skill | Trigger | What it does |
 |---|---|---|
 | [**`init-native-memory`**](skills/init-native-memory/SKILL.md) | `/init-native-memory`, "set up agent memory", "the AI keeps forgetting context" | Scaffolds a `.memory/` (committed) + `.scratch/` (gitignored) layer into any git repo. Includes templates for goals, decisions, lessons, postmortems, and a four-tier progressive-disclosure read protocol so session-start cost stays O(1) as the corpus grows. |
+| [**`memory-enhanced-prompt`**](skills/memory-enhanced-prompt/SKILL.md) | `/memory-enhanced-prompt`, "load memory", "snapshot memory", "what was I working on", "remember context" | Force-triggers a three-phase memory recall (scan -> wrap with a Memory Snapshot block -> audit completeness) before the agent produces any substantive answer. Companion to `init-native-memory`: scaffolding installs the protocol; this skill activates it at runtime. |
 
 More skills coming. [Open an issue](https://github.com/nydrx/agent-memory-skills/issues) if you have one in mind.
 
@@ -95,6 +103,36 @@ or naturally:
 > "The AI keeps forgetting our project context across chats — can we fix that?"
 
 The agent's skill loader matches the `description` field in each skill's frontmatter against your message and offers to invoke the right one. Each skill is self-contained — its `SKILL.md` documents exactly what it does, when it triggers, and what it writes to your repo.
+
+Once `.memory/` is scaffolded, run the recall side at the start of any session where you want the agent grounded in the persistent context rather than guessing:
+
+```
+/memory-enhanced-prompt
+```
+
+The agent then emits a compact Memory Snapshot block before answering. A typical snapshot looks like:
+
+```
+## Memory Snapshot
+
+**Active goals** (top 3):
+- G-0007: corpus upload MVP -- BFF accepts uploaded text + queues for analysis; success = end-to-end smoke passes in PPE.
+
+**In-flight tasks** (`.scratch/tasks/`):
+- T-0042 corpus-upload-ui: pickup -> wire SPA dropzone to /api/v2/service/corpus/upload; backend returns 202 + task_id.
+
+**Recent decisions** (top 5 by date):
+- 0011 bff-base-path: SPA always calls `/api/v2/service/*`; never bypass to srm directly.
+
+**Recent lessons** (top 5):
+- oidc-byted-claim-quirks: `byted_*` userinfo fields are JSON strings sometimes literally `"null"`; parse via `_parse_byted_label`.
+
+**Open postmortems**: (none)
+
+---
+```
+
+The agent's substantive answer follows the snapshot, grounded in what it just read.
 
 ---
 
